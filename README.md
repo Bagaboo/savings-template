@@ -7,6 +7,7 @@ Resource Manager Template for our brand new Savings system. Deploys six resource
 - Virtual Network Gateway
 - Public Ip Address
 - App Service Plan
+
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcollector-bank%2Fsavings-template%2Fmaster%2Fshared%2Fshared.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
@@ -22,6 +23,7 @@ Resource Manager Template for our brand new Savings system. Deploys six resource
 	- Standard A1
 - Public Ip Addresses 
 - Network Security Groups
+
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcollector-bank%2Fsavings-template%2Fmaster%2Fjumpbox%2Fjumpbox.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
@@ -32,6 +34,7 @@ Resource Manager Template for our brand new Savings system. Deploys six resource
 	- Ubuntu 16.04 LTS
 	- Docker Extension
 	- Custom Script Extension that installs Eventstore
+	
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcollector-bank%2Fsavings-template%2Fmaster%2Feventstore%2Feventstore.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
@@ -42,12 +45,14 @@ Resource Manager Template for our brand new Savings system. Deploys six resource
 	- Ubuntu 16.04 LTS
 	- Docker Extension
 	- Custom Script Extension that installs Elasticsearch
+	
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcollector-bank%2Fsavings-template%2Fmaster%2Felasticsearch%2Felasticsearch.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>	
 	
 #Client
 - Webapp with VPN connection to Virtual Network in Shared.
+
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcollector-bank%2Fsavings-template%2Fmaster%2Fclient%2Fclient.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
@@ -55,12 +60,14 @@ Resource Manager Template for our brand new Savings system. Deploys six resource
 
 #Api
 - Apiapp with VPN connection to Virtual Network in Shared.
+
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcollector-bank%2Fsavings-template%2Fmaster%2Fapi%2Fapi.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
 
 #Sql
 - Sql server and database.
+
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcollector-bank%2Fsavings-template%2Fmaster%2Fsql%2Fsql.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
