@@ -1,0 +1,241 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualNetworkName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "appServicePlanSKU": {
+      "type": "string",
+      "allowedValues": [
+        "Free",
+        "Shared",
+        "Basic",
+        "Standard"
+      ],
+      "defaultValue": "Standard"
+    },
+    "appServicePlanWorkerSize": {
+      "type": "string",
+      "allowedValues": [
+        "0",
+        "1",
+        "2"
+      ],
+      "defaultValue": "0"
+    },
+    "gatewaySku": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "metadata": {
+        "description": "The Sku of the Gateway. This must be one of Basic, Standard or HighPerformance."
+      }
+    },
+    "clientRootCertName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "clientRootCertData": {
+      "type": "string",
+      "minLength": 1
+    },
+    "storageName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "serviceBusNamespaceName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "storageType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    }
+  },
+  "variables": {
+    "storageAccountName": "[concat('sto',parameters('storageName'),uniqueString(resourceGroup().id))]",
+    "virtualNetworkPrefix": "10.0.0.0/16",
+    "virtualNetworkSubnet1Name": "EventStoreSubnet",
+    "virtualNetworkSubnet1Prefix": "10.0.0.0/24",
+    "virtualNetworkSubnet2Name": "ElasticsearchSubnet",
+    "virtualNetworkSubnet2Prefix": "10.0.1.0/24",
+    "virtualNetworkSubnet3Name": "BusinessIntelligenceSubnet",
+    "virtualNetworkSubnet3Prefix": "10.0.2.0/24",
+    "virtualNetworkSubnet4Name": "JumpboxSubnet",
+    "virtualNetworkSubnet4Prefix": "10.0.3.0/24",
+    "virtualNetworkSubnet5Name": "GatewaySubnet",
+    "virtualNetworkSubnet5Prefix": "10.0.4.0/24",
+    "vpnClientAddressPoolPrefix": "192.168.2.0/24",
+    "gatewayPublicIpName": "pip-gateway",
+    "vpnGatewayName": "vpn-gateway",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('virtualNetworkName'))]",
+    "gatewaySubnetRef": "[concat(variables('vnetID'),'/subnets/','GatewaySubnet')]",
+    "storageName": "[concat('storage', uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "name": "[parameters('virtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "vnet"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('virtualNetworkPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('virtualNetworkSubnet1Name')]",
+            "properties": {
+              "addressPrefix": "[variables('virtualNetworkSubnet1Prefix')]"
+            }
+          },
+          {
+            "name": "[variables('virtualNetworkSubnet2Name')]",
+            "properties": {
+              "addressPrefix": "[variables('virtualNetworkSubnet2Prefix')]"
+            }
+          },
+          {
+            "name": "[variables('virtualNetworkSubnet3Name')]",
+            "properties": {
+              "addressPrefix": "[variables('virtualNetworkSubnet3Prefix')]"
+            }
+          },
+          {
+            "name": "[variables('virtualNetworkSubnet4Name')]",
+            "properties": {
+              "addressPrefix": "[variables('virtualNetworkSubnet4Prefix')]"
+            }
+          },
+
+          {
+            "name": "[variables('virtualNetworkSubnet5Name')]",
+            "properties": {
+              "addressPrefix": "[variables('virtualNetworkSubnet5Prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "name": "[variables('vpnGatewayName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('gatewayPublicIPName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('gatewaySubnetRef')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('gatewayPublicIPName'))]"
+              }
+            },
+            "name": "vnetGatewayConfig"
+          }
+        ],
+        "sku": {
+          "name": "[parameters('gatewaySku')]",
+          "tier": "[parameters('gatewaySku')]"
+        },
+        "gatewayType": "Vpn",
+        "vpnType": "RouteBased",
+        "enableBgp": "false",
+        "vpnClientConfiguration": {
+          "vpnClientAddressPool": {
+            "addressPrefixes": [
+              "[variables('vpnClientAddressPoolPrefix')]"
+            ]
+          },
+          "vpnClientRootCertificates": [
+            {
+              "name": "[parameters('clientRootCertName')]",
+              "properties": {
+                "PublicCertData": "[parameters('clientRootCertData')]"
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('gatewayPublicIPName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      }
+    },
+    {
+      "name": "[parameters('appServicePlanName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2014-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "appServicePlan"
+      },
+      "properties": {
+        "name": "[parameters('appServicePlanName')]",
+        "sku": "[parameters('appServicePlanSKU')]",
+        "workerSize": "[parameters('appServicePlanWorkerSize')]",
+        "numberOfWorkers": 1
+      }
+    },
+    {
+      "apiVersion": "2015-08-01",
+      "name": "[parameters('serviceBusNamespaceName')]",
+      "type": "Microsoft.ServiceBus/namespaces",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "ServiceBus"
+      },
+      "properties": {
+      },
+      "resources": [
+      ]
+    },
+      {
+          "name": "[variables('storageAccountName')]",
+          "type": "Microsoft.Storage/storageAccounts",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2015-06-15",
+          "dependsOn": [ ],
+          "tags": {
+              "displayName": "storage"
+          },
+          "properties": {
+              "accountType": "[parameters('storageType')]"
+          }
+      }
+  ],
+    "outputs": {
+    }
+}

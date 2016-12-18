@@ -1,0 +1,21 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"virtualNetworkName": {
+			"value": "vnet-savings-env"
+		},
+		"appServicePlanName": {
+			"value": "asp-savings-env"
+		},
+		"clientRootCertName": {
+			"value": ""
+		},
+		"clientRootCertData": {
+			"value": ""
+		},
+		"serviceBusNamespacename": {
+			"value": "sb-savings-env"
+		}
+	}
+}

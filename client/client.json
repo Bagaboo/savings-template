@@ -1,0 +1,61 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "webappName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "appServicePlanResourceGroupName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The id of the vnet to deploy resources into"
+      }
+    },
+    "vnetResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the resource group with the vnet"
+      }
+    }
+  },
+  "variables": {
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-08-01",
+      "name": "[parameters('webappName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "WebApp"
+      },
+      "properties": {
+        "name": "[parameters('webappName')]",
+        "serverFarmId": "[resourceId(parameters('appServicePlanResourceGroupName'),'Microsoft.Web/serverfarms/', parameters('appServicePlanName'))]"
+      },
+      "resources": [
+        {
+          "apiVersion": "2015-08-01",
+          "name": "vpn-connection",
+          "type": "virtualNetworkConnections",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', parameters('webappName'))]"
+          ],
+          "properties": {
+            "vnetResourceId": "[concat(resourceId(parameters('vnetResourceGroupName'),'Microsoft.Network/virtualNetworks/', parameters('vnetName')))]"
+          }
+        }
+      ]
+    }
+  ]
+}

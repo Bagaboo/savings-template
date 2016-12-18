@@ -1,0 +1,33 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUserName": {
+      "value": "THISISNOTTHEUSERNAMEWEUSE"
+    },
+    "adminPassword": {
+      "value": "THISISNOTTHEPASSWORDWEUSE"
+    },
+    "storageName": {
+      "value": "es"
+    },
+    "subnetName": {
+      "value": "EventstoreSubnet"
+    },
+    "vnetName": {
+      "value": "vnet-savings-env"
+    },
+    "vm-eventstoreName": {
+      "value": "eventstore"
+    },
+    "vnetResourceGroupName": {
+      "value": "Group-Savings-Shared-ENV"
+    },
+    "ipPrefix": {
+      "value": "10.0.0.1"
+    },
+    "templateBaseUri": {
+      "value": "https://raw.githubusercontent.com/collector-bank/savings-template/master"
+    }
+  }
+}

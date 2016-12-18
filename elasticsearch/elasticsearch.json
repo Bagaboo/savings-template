@@ -1,0 +1,247 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin username used when provisioning virtual machines"
+      }
+    },
+    "adminPassword": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin password used when provisioning virtual machines"
+      }
+    },
+    "storageName": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage Account Name"
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the vnet and subnet to deploy resources into"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The id of the vnet to deploy resources into"
+      }
+    },
+    "vnetResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the resource group with the vnet"
+      }
+    },
+    "templateBaseUri": {
+      "type": "string",
+      "metadata": {
+        "description": "Uri of template base"
+      }
+    },
+    "vm-elasticName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "elastic"
+    },
+    "storageType": {
+      "type": "string",
+      "defaultValue": "Premium_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    },
+    "ipPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.1",
+      "metadata": {
+        "description": "ipPrefix"
+      }
+    }
+  },
+  "variables": {
+    "vm-name": "[concat('vm-',parameters('vm-elasticName'),'-')]",
+    "nic-name": "[concat('nic-',parameters('vm-elasticName'),'-')]",
+    "storageAccountName": "[concat('sto',parameters('storageName'),uniqueString(resourceGroup().id))]",
+
+    "vm-size": "Standard_DS1_v2",
+    "vm-ubuntuOSVersion": "16.04-LTS",
+    "vm-imagePublisher": "Canonical",
+    "vm-imageOffer": "UbuntuServer",
+    "vm-elasticOSDiskName": "vm-elasticOSDisk",
+    "vm-elasticVmSize": "Standard_DS1_v2",
+    "subnet": {
+      "name": "[parameters('subnetName')]",
+      "vnetName": "[parameters('vnetName')]"
+    },
+    "subnetRef": "[concat(resourceId(parameters('vnetResourceGroupName'),'Microsoft.Network/virtualNetworks/', variables('subnet').vnetName),'/subnets/', variables('subnet').name)]"
+  },
+  "resources": [
+    {
+      "name": "set-elastic",
+      "type": "Microsoft.Compute/availabilitySets",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "availabilitySet"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 20,
+        "platformFaultDomainCount": 3
+      }
+    },
+    {
+      "name": "[variables('storageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "storage-elastic"
+      },
+      "properties": {
+        "accountType": "[parameters('storageType')]"
+      }
+    },
+    {
+      "name": "[concat(variables('nic-name'), copyindex())]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "nic-loop",
+        "count": 3
+      },
+      "apiVersion": "2015-06-15",
+      "tags": {
+        "displayName": "nic-elastic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[concat(parameters('ipPrefix'),copyindex())]",
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[concat(variables('vm-name'), copyindex())]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "elastic-vm-loop",
+        "count": 3
+      },
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nic-name'), copyindex())]",
+        "[resourceId('Microsoft.Compute/availabilitySets', 'set-elastic')]"
+      ],
+      "tags": {
+        "displayName": "vm-elastic"
+      },
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', 'set-elastic')]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('vm-elasticVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('vm-name'),copyIndex())]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('vm-imagePublisher')]",
+            "offer": "[variables('vm-imageOffer')]",
+            "sku": "[variables('vm-ubuntuOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "vm-elasticOSDisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', variables('vm-elasticOSDiskName'),copyIndex(), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nic-name'), copyindex()))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(variables('vm-name'), copyindex(), '/DockerExtension')]",
+          "apiVersion": "2015-06-15",
+          "tags": {
+            "displayName": "DockerExtension"
+          },
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', variables('vm-name'), copyindex())]"
+          ],
+          "properties": {
+            "autoUpgradeMinorVersion": true,
+            "protectedSettings": {},
+            "publisher": "Microsoft.Azure.Extensions",
+            "settings": {},
+            "type": "DockerExtension",
+            "typeHandlerVersion": "1.1"
+          }
+        },
+        {
+          "tags": {
+            "displayName": "installElasticsearch"
+          },
+          "type": "extensions",
+          "name": "[concat('installElasticsearch', copyindex())]",
+          "apiVersion": "2015-06-15",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', variables('vm-name'), copyindex())]",
+            "[resourceId('Microsoft.Compute/virtualMachines/extensions/', concat(variables('vm-name'), copyindex()),'DockerExtension')]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.Azure.Extensions",
+            "type": "CustomScript",
+            "typeHandlerVersion": "2.0",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[concat(parameters('templateBaseUri'),'/elasticsearch/setup.sh')]"
+              ],
+              "commandToExecute": "[concat('sh setup.sh ',concat(parameters('templateBaseUri'),'/elasticsearch'),' ',concat(parameters('ipPrefix'),copyindex()))]"
+            }
+          }
+        }
+      ]
+    }
+  ],
+    "outputs": {
+    }
+}

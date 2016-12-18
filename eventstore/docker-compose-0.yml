@@ -1,0 +1,35 @@
+version: '2'
+services:
+  eventstore:
+    image: eventstore/eventstore
+    container_name: eventstore
+    network_mode: host
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - /data/db:/data/db
+      - /data/log:/data/log
+    ports:
+      - 2112:2112
+      - 2113:2113
+      - 1112:1112
+      - 1113:1113
+      - 1114:1114
+      - 1115:1115
+    environment:
+      - EVENTSTORE_CLUSTER_SIZE=3
+      - EVENTSTORE_COMMIT_COUNT=3
+      - EVENTSTORE_INT_IP=10.0.0.10
+      - EVENTSTORE_EXT_IP=10.0.0.10
+      - EVENTSTORE_DISCOVER_VIA_DNS=false
+      - EVENTSTORE_GOSSIP_SEED=10.0.0.11:2112,10.0.0.12:2112
+      - EVENTSTORE_GOSSIP_TIMEOUT_MS=1000
+      - EVENTSTORE_STATS_PERIOD_SEC=300
+      - EVENTSTORE_RUN_PROJECTIONS=None

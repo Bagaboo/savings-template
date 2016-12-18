@@ -1,0 +1,335 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+
+    "jumpboxStorageType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    },
+    "storageName": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage Account Name"
+      }
+    },
+    "jumpboxAdminUserName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "jumpboxAdminPassword": {
+      "type": "securestring"
+    },
+    "jumpboxWindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2016-Datacenter",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "jumpboxLinuxOSVersion": {
+      "type": "string",
+      "defaultValue": "16.04-LTS",
+      "allowedValues": [
+        "16.04-LTS"
+      ]
+    },
+    "templateBaseUri": {
+      "type": "string",
+      "metadata": {
+        "description": "Uri of template base"
+      }
+    },
+    "vnetResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the resource group with the vnet"
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the vnet and subnet to deploy resources into"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The id of the vnet to deploy resources into"
+      }
+    }
+  },
+  "variables": {
+
+    "storageAccountName": "[concat('sto',parameters('storageName'),uniqueString(resourceGroup().id))]",
+    "subnet": {
+      "name": "[parameters('subnetName')]",
+      "vnetName": "[parameters('vnetName')]"
+    },
+    "subnetRef": "[concat(resourceId(parameters('vnetResourceGroupName'),'Microsoft.Network/virtualNetworks/', variables('subnet').vnetName),'/subnets/', variables('subnet').name)]",
+
+
+    "jumpboxImagePublisher-win": "MicrosoftWindowsServer",
+    "jumpboxImageOffer-win": "WindowsServer",
+    "jumpboxVmSize-win": "Standard_D1",
+    "jumpboxName-win": "vm-jumpbox-win",
+    "jumpboxNicName-win": "nic-jumpbox-win",
+    "jumpboxOSDiskName-win": "jumpboxOSDisk-win",
+
+    "jumpboxImagePublisher-linux": "Canonical",
+    "jumpboxImageOffer-linux": "UbuntuServer",
+    "jumpboxVmSize-linux": "Standard_A1",
+    "jumpboxName-linux": "vm-jumpbox-linux",
+    "jumpboxNicName-linux": "nic-jumpbox-linux",
+    "jumpboxOSDiskName-linux": "jumpboxOSDisk-linux"
+  },
+  "resources": [
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "nsg-jumpbox-linux",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "RemoteDesktop",
+            "properties": {
+              "description": "Allows SSH access",
+              "protocol": "Tcp",
+              "sourcePortRange": "22",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "nsg-jumpbox-win",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "RemoteDesktop",
+            "properties": {
+              "description": "Allows RDP access",
+              "protocol": "Tcp",
+              "sourcePortRange": "50000",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "pip-jumpbox-linux",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "pip-jumpbox-win",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "name": "[variables('storageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "storage-jumpbox"
+      },
+      "properties": {
+        "accountType": "[parameters('jumpboxStorageType')]"
+      }
+    },
+    {
+      "name": "[variables('jumpboxNicName-win')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-jumpbox-win')]"
+      ],
+      "tags": {
+        "displayName": "nic-jumpbox-win"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-jumpbox-win')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              },
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-jumpbox-win')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('jumpboxNicName-linux')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-jumpbox-linux')]"
+      ],
+      "tags": {
+        "displayName": "nic-jumpbox-linux"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-jumpbox-linux')]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              },
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-jumpbox-linux')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('jumpboxName-win')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('jumpboxNicName-win'))]"
+      ],
+      "tags": {
+        "displayName": "vm-jumpbox-win"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('jumpboxVmSize-win')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('jumpboxName-win')]",
+          "adminUsername": "[parameters('jumpboxAdminUsername')]",
+          "adminPassword": "[parameters('jumpboxAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('jumpboxImagePublisher-win')]",
+            "offer": "[variables('jumpboxImageOffer-win')]",
+            "sku": "[parameters('jumpboxWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "jumpboxOSDisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', variables('jumpboxOSDiskName-win'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('jumpboxNicName-win'))]"
+            }
+          ]
+        }
+      }
+
+    },
+    {
+      "name": "[variables('jumpboxName-linux')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('jumpboxNicName-linux'))]"
+      ],
+      "tags": {
+        "displayName": "vm-jumpbox-linux"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('jumpboxVmSize-linux')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('jumpboxName-linux')]",
+          "adminUsername": "[parameters('jumpboxAdminUsername')]",
+          "adminPassword": "[parameters('jumpboxAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('jumpboxImagePublisher-linux')]",
+            "offer": "[variables('jumpboxImageOffer-linux')]",
+            "sku": "[parameters('jumpboxLinuxOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "jumpboxOSDisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', variables('jumpboxOSDiskName-linux'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('jumpboxNicName-linux'))]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+    "outputs": {
+    }
+}

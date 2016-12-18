@@ -1,0 +1,30 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"storageName": {
+			"value": "jump"
+		},
+		"jumpboxAdminUserName": {
+			"value": "notadmin"
+		},
+		"jumpboxAdminPassword": {
+			"value": "changeme"
+		},
+		"jumpboxWindowsOSVersion": {
+			"value": "2016-Datacenter"
+		},
+		"vnetResourceGroupName": {
+			"value": "Group-Savings-Shared-ENV"
+		},
+		"subnetName": {
+			"value": "JumpboxSubnet"
+		},
+		"vnetName": {
+			"value": "vnet-savings-ENV"
+		},
+		"templateBaseUri": {
+			"value": "https://raw.githubusercontent.com/collector-bank/savings-template/master"
+		}
+	}
+}

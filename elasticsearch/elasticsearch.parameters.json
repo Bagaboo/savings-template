@@ -1,0 +1,33 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUserName": {
+      "value": "THISISNOTTHEUSERNAMEWEUSE"
+    },
+    "adminPassword": {
+      "value": "THISISNOTTHEPASSWORDWEUSE"
+    },
+    "storageName": {
+      "value": "elastic"
+    },
+    "subnetName": {
+      "value": "ElasticsearchSubnet"
+    },
+    "vnetName": {
+      "value": "vnet-savings-env"
+    },
+	"vnetResourceGroupName": {
+      "value": "Group-Savings-Shared-ENV"
+    },
+    "vm-elasticName": {
+      "value": "elastic"
+    },
+    "ipPrefix": {
+      "value": "10.0.1.1"
+    },
+    "templateBaseUri": {
+      "value": "https://raw.githubusercontent.com/collector-bank/savings-template/master"
+    }
+  }
+}
