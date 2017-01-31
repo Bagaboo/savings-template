@@ -9,7 +9,11 @@
     "sqlserverAdminLoginPassword": {
       "type": "securestring"
     },
-    "sqldatabaseName": {
+    "sqldatabaseName1": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sqldatabaseName2": {
       "type": "string",
       "minLength": 1
     },
@@ -81,7 +85,25 @@
                     }
                 },
                 {
-                    "name": "[parameters('sqldatabaseName')]",
+                    "name": "[parameters('sqldatabaseName1')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[variables('sqlserverName')]"
+                    ],
+                    "tags": {
+                        "displayName": "sqldatabase"
+                    },
+                    "properties": {
+                        "collation": "[parameters('sqldatabaseCollation')]",
+                        "edition": "[parameters('sqldatabaseEdition')]",
+                        "maxSizeBytes": "1073741824",
+                        "requestedServiceObjectiveName": "[parameters('sqldatabaseRequestedServiceObjectiveName')]"
+                    }
+                },
+                {
+                    "name": "[parameters('sqldatabaseName2')]",
                     "type": "databases",
                     "location": "[resourceGroup().location]",
                     "apiVersion": "2014-04-01-preview",

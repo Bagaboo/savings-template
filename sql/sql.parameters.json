@@ -8,8 +8,11 @@
 		"sqlserverAdminLoginPassword": {
 			"value": "CHANGETHISANDWEDID"
 		},
-		"sqldatabaseName": {
-			"value": "migrations"
+		"sqldatabaseName1": {
+			"value": "migrations-db"
+		},
+		"sqldatabaseName2": {
+			"value": "savings-core-db"
 		},
 		"sqlserverName": {
 			"value": "sql-env-"
